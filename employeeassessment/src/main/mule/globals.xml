@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="ace657da-3348-48a6-90e9-b839893e85fd" >
+		<db:my-sql-connection host="db4free.net" port="3306" user="gauravapisero" password="Melghat1@" database="employidbapisero" />
+	</db:config>
+	<os:object-store name="employeeObjectStore" doc:name="Object store" doc:id="497ae159-3e8e-41fa-907d-b2a8c277cf3d" />
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="f38ad5f1-6741-4d3a-832d-d690ad8eff7f" >
+		<http:request-connection host="dummy.restapiexample.com" />
+	</http:request-config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="3a15dd02-af48-452e-96f7-bafb34f7ea68" >
+		<email:smtp-connection host="smtp.gmail.com" port="995" user="gaurav.dubey@apisero.com" password="Melghat1@" />
+	</email:smtp-config>
+</mule>

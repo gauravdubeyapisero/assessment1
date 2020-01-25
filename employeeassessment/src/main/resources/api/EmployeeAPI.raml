@@ -1,0 +1,63 @@
+#%RAML 1.0
+version: 1
+title: EmployeeDataManagement
+types:
+  Employee: !include datatype/employee.raml
+  CustomErrorMessage: !include datatype/errorMessage.raml
+
+traits:
+  client-id-required:
+      headers:
+        client_id:
+          description: Client ID
+          type: string
+        client_secret:
+          description: Client Secret
+          type: string
+
+/employee:
+  get:
+    is: [client-id-required]
+    description: Retrieves employee details
+    displayName: Get employees
+    responses:
+      200:
+        body:
+          application/json:
+            example: !include examples/employeesExample.json
+      404:
+        body:
+          application/json:
+            example: !include examples/customErrorMessageExample.json
+  post:
+    is: [client-id-required]
+    description: post all customers details
+    displayName: Post all customers
+    body:
+        application/json:
+          type: Employee[]
+    responses:
+        200:
+          body:
+            application/json:
+              example: |
+                { "message": "Employee Data Successfully inserted in Database" }
+        404:
+          body:
+            application/json:
+              example: !include examples/customErrorMessageExamplePost.json
+  /{id}:
+    get:
+      is: [client-id-required]
+      description: Get a employee details with ID
+      displayName: Get a specific employee
+      responses:
+        200:
+          body:
+            application/json: 
+               example: |
+                { "name": "max mule" }
+        404:
+          body:
+            application/json:
+              example: !include examples/customErrorMessageExampleId.json

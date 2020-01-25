@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<flow name="getEmployees" doc:id="3ca92f1e-1df2-460c-8f4b-e2fee2beebef">
+	 <http:request method="GET" doc:name="Request" doc:id="9a986f80-460a-4206-aacc-c2bf8f59b74f" config-ref="HTTP_Request_configuration" path="/api/v1/employees"/>
+		<choice doc:name="Choice" doc:id="a6816ec6-8444-40d2-9e0a-f649e27d106b" >
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<ee:transform doc:name="transform data according to employee database table" doc:id="7c17f5ff-c9fa-434c-bd59-39fe0cb4f267" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.data map ((item, index) -> {
+    id: item.id,
+    employee_name: item.employee_name,
+    employee_salary: item.employee_salary,
+    employee_age: item.employee_age
+})]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value="#[payload]" doc:name="Set Variable" doc:id="a76086c7-bf26-4c97-a87c-fca322da1cf7" variableName="employeeData" />
+				<db:bulk-insert doc:name="Bulk insert" doc:id="2e7ffd9f-edbb-43ee-b05e-a3c8d410be41" config-ref="Database_Config">
+					<db:sql >insert into employee(id, employee_name, employee_salary, employee_age)
+values(:id, :employee_name, :employee_salary, :employee_age)</db:sql>
+				</db:bulk-insert>
+				<ee:transform doc:name="get id and employee_name" doc:id="ad3d5da8-929e-4fab-8876-7d23337d4f85">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.employeeData map ((item,index) -> {
+    id:item.id,
+    employee_name:item.employee_name
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<os:store doc:id="750e6c36-1cb1-44a1-9ee5-3398060a9593" key="employeeData" objectStore="employeeObjectStore" />
+				<ee:transform doc:name="transform payload to csv" doc:id="2cada416-fdb8-4176-a919-e4312dc52470" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+vars.employeeData]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<email:send doc:name="Send" doc:id="bfed9f8d-6b4e-412d-a171-07d34578b2da" config-ref="Email_SMTP" fromAddress="gaurav.dubey@apisero.com" subject="Employee Data">
+					<email:to-addresses >
+						<email:to-address value="gaurav.dubey@apisero.com" />
+					</email:to-addresses>
+					<email:body contentType="application/csv">
+					</email:body>
+				</email:send>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="No Data Received from Request" doc:id="f4740c3b-c5b2-4fa5-9e01-8923c646df83" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "No Data Received from Request"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	
+</flow>
+	<flow name="postEmployees" doc:id="2a49b514-51ff-44fa-b2df-93b2d9802984" >
+	<set-variable value="#[payload]" doc:name="Set Variable" doc:id="082cd0e2-381a-49f1-8452-ceac6427fd4f" variableName="newData"/>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="f252de13-be24-49f4-b726-6b431c3c75cd" config-ref="Database_Config">
+					<db:sql >insert into employee(id, employee_name, employee_salary, employee_age)
+values(:id, :employee_name, :employee_salary, :employee_age)</db:sql>
+				</db:bulk-insert>
+		<os:retrieve doc:name="Retrieve" doc:id="48b0a4fd-4880-4dff-853d-f77d2df07687" key="employeeData" target="retrievedValue">
+			<os:default-value ><![CDATA[#['']]]></os:default-value>
+		</os:retrieve>
+		<ee:transform doc:name="Transform Message" doc:id="60951ca0-0e51-4555-acff-97f9110ea10d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+vars.newData map ((item,index) -> {
+    id:item.id,
+    employee_name:item.employee_name
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="26ceee34-e2cd-4cb2-8e2e-891c29ff1fe3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+vars.retrievedValue ++ payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<os:store doc:name="Store" doc:id="9d01af5d-d33f-405e-998e-032ed2cfaab7" key="employeeData"/>
+		<ee:transform doc:name="Transform Message" doc:id="f7f14267-4b1f-4f88-8ed6-839b96af38ea" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"message": "data inserted"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getEmployeeByID" doc:id="25acc3f8-cde2-43af-b963-c451bcea3a4f" >
+		<os:retrieve doc:name="Retrieve" doc:id="f3b3c931-6eb7-4a31-ae98-38c2f85ec2f9" key="employeeData" target="retrievedEmployeeData" objectStore="employeeObjectStore" />
+		<ee:transform doc:name="Transform Message" doc:id="340bc2e3-ed58-4dcb-9107-759498d84af2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.retrievedEmployeeData filter ((item,index) -> item.id == attributes.uriParams.id)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
